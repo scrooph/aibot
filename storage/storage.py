@@ -34,14 +34,14 @@ class Storage(object):
         """
         #key_dict = {}
         key_list = []
-        for i in xrange(key_max_len):
+        for i in range(key_max_len):
             kl = key_max_len - i
-            for idx in xrange(num-kl+1):
+            for idx in range(num-kl+1):
                 #print("kl:%d idx:%d" % (kl, idx))
                 key = ""
                 weight = 0;
                 x = 0
-                for n in xrange(kl):
+                for n in range(kl):
                     if 0 == x:
                         key += word_list[idx+n]
                         x = 1
@@ -212,7 +212,7 @@ class Storage(object):
     def find(self, text):
         hash_val = hash(text);
 
-        # 从会话字典匹配
+        # 从会话字典匹配; 此处因为中文 unicode编码问题，导致hash val与训练的时候不一致，所以原文匹配几乎失效
         resp_text = self.find_from_conversation_dict(hash_val);
         if resp_text:
             return resp_text

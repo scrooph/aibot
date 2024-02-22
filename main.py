@@ -6,8 +6,7 @@ import json
 import jieba
 import chatbot
 import logging
-import SocketServer
-import SimpleHTTPServer
+from http.server import HTTPServer,BaseHTTPRequestHandler
 
 # 新建机器人
 idx = 0
@@ -28,7 +27,7 @@ def load_userdict():
     # 默认词典
     jieba.load_userdict("./dict/dict.txt");
 
-class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+class ServerHandler(BaseHTTPRequestHandler):
     def chat_handler(self, post_dict):
         """
         请求报体: {"uid":123456, roomid=1000000015, "gid":5, "text":"你好"}
@@ -37,19 +36,19 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         global bot, idx;
 
         # 判断报体合法性
-        if not post_dict.has_key("uid"):
+        if "uid" not in post_dict:
             logging.warning("Miss param 'uid' in request body!")
             self.send_error(415, "Miss param 'uid' in request body!")
             return
-        elif not post_dict.has_key("roomid"):
+        elif "roomid" not in post_dict:
             logging.warning("Miss param 'roomid' in request body!")
             self.send_error(415, "Miss param 'roomid' in request body!")
             return
-        elif not post_dict.has_key("gid"):
+        elif "gid" not in post_dict:
             logging.warning("Miss param 'gid' in request body!")
             self.send_error(415, "Miss param 'gid' in request body!")
             return
-        elif not post_dict.has_key("text"):
+        elif "text" not in post_dict:
             logging.warning("Miss param 'text' in request body!")
             self.send_error(415, "Miss param 'text' in request body!")
             return
@@ -71,16 +70,21 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         resp_dict.setdefault("uid", post_dict.get("uid"))
         resp_dict.setdefault("roomid", post_dict.get("roomid"))
         resp_dict.setdefault("gid", post_dict.get("gid"))
-        resp_dict.setdefault("text", resp_text.decode('utf-8'))
-
-        self.wfile.write(json.dumps(resp_dict))
+        try:
+            resp_dict.setdefault("text", resp_text.decode('utf-8'))
+        except Exception as e:
+            resp_dict.setdefault("text", resp_text)
+        finally:
+            print("......")
+            
+        self.wfile.write((json.dumps(resp_dict)).encode('utf-8'))
         return
 
     def do_GET(self):
         logging.warning("======= GET STARTED =======")
         logging.warning(self.headers)
 
-        SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
+        HTTPServer.SimpleHTTPRequestHandler.do_GET(self)
 
     def do_POST(self):
         logging.warning("======= POST STARTED =======")
@@ -91,7 +95,7 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         if ctype == 'application/json':
             length = int(self.headers['content-length'])
             post_dict = json.loads(self.rfile.read(length))
-            self.TODOS.append(post_dict)
+            #self.TODOS.append(post_dict)
         else:
             #self.send_error(415, "Only json data is supported.")
             #return
@@ -110,7 +114,7 @@ if __name__ == "__main__":
     load_userdict();
 
     # 启动HTTP服务
-    httpd = SocketServer.TCPServer(("", PORT), ServerHandler)
+    httpd = HTTPServer(("", PORT), ServerHandler)
 
     print("Started httpserver on port:%s" % PORT);
 
